@@ -1,0 +1,6 @@
+{
+  "result": "error",
+  "msg": "Bad event queue ID: nope",
+  "queue_id": "nope",
+  "code": "BAD_EVENT_QUEUE_ID"
+}

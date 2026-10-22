@@ -1,0 +1,6 @@
+{
+  "result": "error",
+  "msg": "Channel 'doesnotexist' does not exist",
+  "stream": "doesnotexist",
+  "code": "STREAM_DOES_NOT_EXIST"
+}

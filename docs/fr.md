@@ -1,67 +1,157 @@
-# Template de démonstration
+# Zulip
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Parlez à Gladys depuis [Zulip](https://zulip.com), la messagerie d'équipe libre organisée en canaux et en
+sujets, comme avec le bot Telegram de Gladys : posez une question, lancez une scène, recevez les messages de
+Gladys en message direct. L'intégration écrit aussi dans des canaux Zulip depuis vos scènes, et lance des
+scènes quand un message ou une commande comme `!lumieres off` est écrit dans un canal qu'elle surveille.
+Elle utilise un robot générique de votre organisation Zulip : un serveur que vous hébergez sur le réseau
+local, ou Zulip Cloud.
 
-## Ce que vous obtenez
+> **Développée sans le matériel : retours bienvenus.** L'intégration a été testée contre un vrai serveur
+> Zulip (12.3, sous Docker), mais pas dans un vrai Gladys ni avec toutes les applications Zulip. Dites ce
+> qui marche et ce qui ne marche pas dans les [issues](https://github.com/guim31/gladys-zulip/issues) ou sur
+> le [forum Gladys](https://community.gladysassistant.com).
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Prérequis
+
+- Gladys Assistant **5.1.0** ou plus récent.
+- Une organisation Zulip que Gladys peut joindre : un serveur auto-hébergé (version 7 ou plus) ou Zulip
+  Cloud (l'offre gratuite suffit).
+- Un **robot générique** de cette organisation (pas un robot webhook entrant ni sortant). N'utilisez pas
+  votre compte personnel : le robot répond en son nom.
+- L'e-mail ou l'identifiant de chaque personne autorisée à parler au robot.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+1. Dans Zulip, **Paramètres personnels → Bots → Ajouter un nouveau bot** : type **Bot générique**, un nom
+   comme `Gladys`, un e-mail comme `gladys-bot`. Zulip lui donne un e-mail comme
+   `gladys-bot@example.zulipchat.com`.
+2. Sur la fiche du robot, copiez son **e-mail** et sa **clé d'API** (l'icône de clé, ou **Télécharger
+   zuliprc**).
+3. Dans Gladys, **Intégrations → Zulip → Configuration** :
+   - **Adresse de l'organisation** : l'adresse de votre organisation comme dans le navigateur, par exemple
+     `https://example.zulipchat.com` ou `http://192.168.1.20`.
+   - **E-mail du robot** et **Clé d'API** : ceux de l'étape 2.
+   - **Personnes autorisées** : les personnes que le robot écoute, séparées par des virgules, par **e-mail
+     tel qu'affiché dans Zulip** ou par **identifiant** (`alice@example.org, 12`). **Vide, le robot ne
+     répond à personne** : il ignore les messages de tous ceux qui ne sont pas dans cette liste. Beaucoup
+     d'organisations masquent les e-mails aux robots : utilisez alors l'identifiant, affiché dans le profil
+     de la personne (cliquez sur son nom, puis **Voir le profil**). Les journaux de l'intégration donnent
+     aussi l'identifiant d'une personne pas encore autorisée quand elle écrit au robot.
+   - **Canaux surveillés** : les canaux dont les messages lancent des scènes, par nom (`garage`,
+     `#Salon`), séparés par des virgules. Le robot s'abonne seul aux canaux publics ; abonnez-le d'abord aux
+     canaux privés. Un nom qui n'existe pas est signalé, jamais créé.
+   - **Préfixe des commandes** : `!` par défaut (`/` ouvre les commandes de Zulip).
+   - **Langue du robot** : la langue de ce que le robot écrit avant qu'une personne soit liée.
+4. Cliquez sur **Tester la connexion** : le rapport donne l'e-mail du robot, les canaux surveillés et les
+   personnes autorisées trouvés. Le statut de connexion de la page le dit aussi, et nomme un canal ou une
+   personne introuvable.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+### Lier votre compte Zulip pour parler à Gladys
 
-## Actions
+Chaque utilisateur de Gladys qui veut parler à Gladys depuis Zulip le fait une fois :
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+1. Dans Gladys, **Intégrations → Zulip → Configuration**, bloc « Lier mon compte » : cliquez sur
+   **Générer un code de liaison**.
+2. Dans Zulip, ouvrez un **message direct** avec le robot (le **+** à côté de « Messages directs », puis
+   son nom) et envoyez-lui le code (8 caractères). Le robot confirme : votre compte Zulip est lié à votre
+   utilisateur Gladys. Vous pouvez le délier depuis le même bloc.
 
-## Scènes
+## Ce que fait le robot
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
-
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+- **En message direct** avec une personne autorisée : il transmet les messages à Gladys, avec les droits
+  de l'utilisateur Gladys lié, exactement comme le bot Telegram : « Quelle température fait-il dans le
+  salon ? », « Éteins les lumières ». Les réponses de Gladys reviennent dans ce message direct, Markdown
+  rendu par Zulip. Les messages que Gladys vous envoie (l'action de scène **Envoyer un message**, les
+  messages système) y arrivent aussi, même avant toute conversation. Une image de caméra envoyée par une
+  scène arrive en image.
+- **Dans un canal surveillé** : chaque message d'une personne autorisée, dans n'importe quel sujet, lance
+  le déclencheur **Message Zulip reçu**, et un message qui commence par le préfixe lance aussi **Commande
+  Zulip reçue**. Une mention du robot en tête est retirée : `@**Gladys** !lumieres off` est la commande
+  `lumieres`. Le robot n'y répond jamais de lui-même : la suite dépend de vos scènes.
+- **Partout ailleurs** (un message direct de groupe, un canal non surveillé) : il se tait. Gladys ne répond
+  jamais là où d'autres peuvent lire.
+- **Ce qu'il ignore** : tous ceux qui ne sont pas des personnes autorisées, tous les robots (ses propres
+  messages aussi : une scène qui écrit dans un canal surveillé ne se relance jamais elle-même), les
+  modifications, et les messages de plus de 5 minutes quand il les lit (un « !ouvrir garage » d'il y a
+  deux heures ne s'exécute pas maintenant).
+- **Après une coupure** (redémarrage du serveur, de Gladys, réseau) : il se reconnecte seul. Zulip garde
+  pour le robot les messages d'une coupure de moins de 10 minutes ; après une coupure plus longue, ou un
+  redémarrage, le robot relit les messages des 5 dernières minutes.
 
 ## Tableau de bord
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+Le widget **Zulip** montre si le robot est connecté, son e-mail, le nombre de canaux surveillés, les 5
+derniers messages reçus dans les canaux surveillés (auteur, sujet, texte, date) et un bouton **Tester la
+connexion**. Les messages directs avec Gladys n'y figurent jamais : tous ceux qui voient le tableau de bord
+voient le widget.
+
+## Scènes
+
+### Déclencheurs
+
+- **Message Zulip reçu** : une personne autorisée a écrit dans un canal surveillé. Filtres (vide = tous) :
+  **Canal** (écrit comme dans la configuration, par exemple `garage`), **Sujet** (`porte`) et
+  **Expéditeur** (écrit comme dans les personnes autorisées : `alice@example.org` ou `12`). Variables :
+  Message, Expéditeur, Nom de l'expéditeur, Canal, Sujet, Identifiant du canal.
+- **Commande Zulip reçue** : une personne autorisée a écrit une commande dans un canal surveillé : le
+  préfixe, puis un mot, puis des arguments facultatifs, par exemple `!lumieres off cuisine`. Filtre
+  **Commande** : le mot **sans le préfixe, en minuscules** (`lumieres`) ; et Canal, Sujet, Expéditeur.
+  Variables : Commande (`lumieres`), Arguments (`off cuisine`), Message, Expéditeur, Nom de l'expéditeur,
+  Canal, Sujet, Identifiant du canal. Le même message lance aussi **Message Zulip reçu**.
+- **Connexion Zulip perdue** : le robot ne joint plus le serveur, depuis une minute, ou sa clé est
+  refusée. Variable : Erreur. Lancé une fois, jusqu'au retour de la connexion.
+- **Connexion Zulip rétablie** : le robot joint de nouveau le serveur après une perte de connexion.
+  Variable : Compte du robot (e-mail).
+
+### Actions
+
+- **Envoyer un message Zulip** : écrit un message dans un canal (son nom, `garage` ou `#garage`) sous un
+  **Sujet** (`Gladys` s'il est vide), ou à une personne en message direct (son e-mail, ou `@` et son
+  identifiant : `@12`). Le message accepte les variables de scène et le Markdown de Zulip (`**gras**`,
+  `*italique*`, listes, liens, `@**all**`). Le robot n'a pas besoin d'être abonné à un canal public.
+  Résultats : Envoyé (oui/non), Identifiant du message, Erreur. Un message en échec n'arrête pas la scène :
+  testez **Envoyé** par une condition si besoin.
+
+Pour écrire à un utilisateur de Gladys, l'action **Envoyer un message** de Gladys marche aussi : elle
+atteint son compte Zulip lié.
+
+### Idées de scènes
+
+- **Garage par commande** : déclencheur **Commande Zulip reçue**, commande `garage`, canal `garage` ; puis
+  une condition sur la variable Arguments égale à `fermer`, et l'action qui ferme le garage.
+- **Fin de lessive** : quand la puissance de la prise du lave-linge retombe, **Envoyer un message Zulip**
+  au canal `famille`, sujet `Lessive` : « Le lave-linge a fini ».
+- **Alerte si le robot est coupé** : déclencheur **Connexion Zulip perdue**, puis une notification par un
+  autre canal (Gotify, ntfy, SMS) avec la variable Erreur.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« pas de serveur Zulip à cette adresse »** : utilisez l'adresse avec laquelle vous ouvrez Zulip dans un
+  navigateur, sans `/login` ni ce qui suit `#`. `https://<adresse>/api/v1/server_settings` doit répondre
+  `{"result":"success"…}`.
+- **« e-mail ou clé d'API du robot refusés »** : la clé a été régénérée, le robot désactivé, ou l'e-mail
+  n'est pas celui du robot (`…-bot@…`). Recopiez-les depuis **Paramètres personnels → Bots**.
+- **Un canal surveillé est introuvable** : le statut de la page et le test le nomment. Vérifiez son nom ;
+  pour un canal privé, abonnez-y d'abord le robot, puis enregistrez de nouveau la configuration.
+- **Une personne est introuvable** : les e-mails sont sans doute masqués aux robots dans votre
+  organisation : utilisez l'identifiant. Les robots et les comptes désactivés ne sont jamais autorisés.
+- **Le robot ne me répond pas** : êtes-vous dans **Personnes autorisées** ? Lui écrivez-vous en message
+  direct, à deux seulement (pas un message direct de groupe) ? Votre compte est-il lié (le robot vous donne
+  alors la marche à suivre) ?
+- **Une commande ne lance pas la scène** : le filtre Commande est le mot sans le préfixe, en minuscules :
+  `lumieres`, pas `!Lumieres`.
+- Plus de détails dans les journaux de l'intégration avec `LOG_LEVEL=debug`.
+
+## Limites
+
+- Une personne liée à Gladys peut faire depuis Zulip tout ce que peut son utilisateur Gladys : gardez la
+  liste des personnes autorisées courte, et la clé d'API du robot secrète.
+- Un robot par Gladys. Le robot lit les messages par la file d'événements de Zulip (long polling) : une
+  commande prend effet en une seconde environ. Les messages manqués pendant une coupure de plus de
+  5 minutes sont ignorés.
+- Les fichiers, images et messages vocaux envoyés au robot arrivent sous forme de lien Markdown ; seul le
+  texte compte. Les réponses de Gladys vont au message direct, jamais dans un canal.
+- Zulip limite chaque compte à 200 requêtes par minute par défaut : gardez les messages de vos scènes
+  raisonnables.
+- Non affilié à Kandra Labs, Inc. Zulip est une marque de Kandra Labs, Inc.

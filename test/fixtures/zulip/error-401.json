@@ -1,0 +1,5 @@
+{
+  "result": "error",
+  "msg": "Malformed API key",
+  "code": "UNAUTHORIZED"
+}

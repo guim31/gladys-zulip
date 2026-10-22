@@ -1,0 +1,163 @@
+{
+  "result": "success",
+  "msg": "",
+  "messages": [
+    {
+      "id": 15,
+      "sender_id": 8,
+      "content": "!lights off",
+      "recipient_id": 5,
+      "timestamp": 1792703395,
+      "client": "curl",
+      "subject": "door",
+      "topic_links": [],
+      "is_me_message": false,
+      "reactions": [],
+      "submessages": [],
+      "flags": [],
+      "sender_full_name": "Alice Martin",
+      "sender_email": "user8@zulip.test",
+      "sender_realm_str": "",
+      "display_recipient": "garage",
+      "type": "stream",
+      "stream_id": 4,
+      "avatar_url": "/user_avatars/2/d738def157b3799c8ea374cb2fff4c99c7687afc.png",
+      "content_type": "text/x-markdown"
+    },
+    {
+      "id": 16,
+      "sender_id": 8,
+      "content": "hello Gladys",
+      "recipient_id": 10,
+      "timestamp": 1792703395,
+      "client": "curl",
+      "subject": "",
+      "topic_links": [],
+      "is_me_message": false,
+      "reactions": [],
+      "submessages": [],
+      "flags": [],
+      "sender_full_name": "Alice Martin",
+      "sender_email": "user8@zulip.test",
+      "sender_realm_str": "",
+      "display_recipient": [
+        {
+          "id": 8,
+          "email": "user8@zulip.test",
+          "full_name": "Alice Martin",
+          "is_mirror_dummy": false
+        },
+        {
+          "id": 9,
+          "email": "gladys-bot@zulip.test",
+          "full_name": "Gladys",
+          "is_mirror_dummy": false
+        }
+      ],
+      "type": "private",
+      "avatar_url": "/user_avatars/2/d738def157b3799c8ea374cb2fff4c99c7687afc.png",
+      "content_type": "text/x-markdown"
+    },
+    {
+      "id": 17,
+      "sender_id": 8,
+      "content": "group hi",
+      "recipient_id": 11,
+      "timestamp": 1792703395,
+      "client": "curl",
+      "subject": "",
+      "topic_links": [],
+      "is_me_message": false,
+      "reactions": [],
+      "submessages": [],
+      "flags": [],
+      "sender_full_name": "Alice Martin",
+      "sender_email": "user8@zulip.test",
+      "sender_realm_str": "",
+      "display_recipient": [
+        {
+          "id": 8,
+          "email": "user8@zulip.test",
+          "full_name": "Alice Martin",
+          "is_mirror_dummy": false
+        },
+        {
+          "id": 9,
+          "email": "gladys-bot@zulip.test",
+          "full_name": "Gladys",
+          "is_mirror_dummy": false
+        },
+        {
+          "id": 10,
+          "email": "user10@zulip.test",
+          "full_name": "Mallory Doe",
+          "is_mirror_dummy": false
+        }
+      ],
+      "type": "private",
+      "avatar_url": "/user_avatars/2/d738def157b3799c8ea374cb2fff4c99c7687afc.png",
+      "content_type": "text/x-markdown"
+    },
+    {
+      "id": 18,
+      "sender_id": 8,
+      "content": "@**Gladys** !open",
+      "recipient_id": 5,
+      "timestamp": 1792703395,
+      "client": "curl",
+      "subject": "door",
+      "topic_links": [],
+      "is_me_message": false,
+      "reactions": [],
+      "submessages": [],
+      "flags": ["mentioned"],
+      "sender_full_name": "Alice Martin",
+      "sender_email": "user8@zulip.test",
+      "sender_realm_str": "",
+      "display_recipient": "garage",
+      "type": "stream",
+      "stream_id": 4,
+      "avatar_url": "/user_avatars/2/d738def157b3799c8ea374cb2fff4c99c7687afc.png",
+      "content_type": "text/x-markdown"
+    },
+    {
+      "id": 19,
+      "sender_id": 10,
+      "content": "let me in",
+      "recipient_id": 12,
+      "timestamp": 1792703395,
+      "client": "curl",
+      "subject": "",
+      "topic_links": [],
+      "is_me_message": false,
+      "reactions": [],
+      "submessages": [],
+      "flags": [],
+      "sender_full_name": "Mallory Doe",
+      "sender_email": "user10@zulip.test",
+      "sender_realm_str": "",
+      "display_recipient": [
+        {
+          "id": 9,
+          "email": "gladys-bot@zulip.test",
+          "full_name": "Gladys",
+          "is_mirror_dummy": false
+        },
+        {
+          "id": 10,
+          "email": "user10@zulip.test",
+          "full_name": "Mallory Doe",
+          "is_mirror_dummy": false
+        }
+      ],
+      "type": "private",
+      "avatar_url": "/user_avatars/2/9ce87dca6622f79a011449fc1c22ddbfb70c29b0.png",
+      "content_type": "text/x-markdown"
+    }
+  ],
+  "found_anchor": false,
+  "found_oldest": true,
+  "found_newest": true,
+  "history_limited": false,
+  "anchor": 10000000000000000
+}
