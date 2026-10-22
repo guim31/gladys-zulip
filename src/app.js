@@ -66,6 +66,8 @@ export const CREDENTIALS_RETRY_MS = 5 * 60 * 1000;
 export const RECENT_KEPT = 5;
 // The newest messages read back after a new event queue (the 5 minutes window).
 export const CATCH_UP_COUNT = 100;
+// A queue lost sooner than this after it opened is a failure, not an expiry.
+export const QUEUE_MIN_LIFE_MS = 10_000;
 // Message ids already handled: the event queue and the catch-up may both bring one.
 const SEEN_KEPT = 200;
 const SEEN_SAVED = 50;
@@ -341,9 +343,12 @@ export function registerHandlers(gladys, options = {}) {
     let failingSince = null;
     let attempt = 0;
     let lastEventId = null;
+    let openedAt = 0;
+    let quickExpirySince = null; // queues lost as soon as opened, since then
     queueId = null;
-    if (connection !== CONNECTION.DISCONNECTED) {
-      // A reconnection keeps "connected" until the loss is declared.
+    if (connection === CONNECTION.NOT_CONFIGURED) {
+      // A restart of the loop (configuration saved, Gladys reconnected) keeps "connected"
+      // until a loss is declared, so connection_lost still fires.
       setConnection(CONNECTION.CONNECTING);
     }
     const succeeded = async () => {
@@ -359,7 +364,13 @@ export function registerHandlers(gladys, options = {}) {
         if (!queueId) {
           const opened = await openQueue(signal);
           lastEventId = opened.lastEventId;
+          openedAt = now();
           await succeeded();
+          if (quickExpirySince !== null) {
+            failingSince = quickExpirySince; // the failure goes on: never a busy loop
+          }
+          // People or channels found again or lost since the last queue.
+          await publishStatus(true, partialStatus());
           if (Number.isInteger(opened.catchUpFrom) && opened.max > opened.catchUpFrom) {
             await catchUp(opened.catchUpFrom, signal);
           }
@@ -370,6 +381,7 @@ export function registerHandlers(gladys, options = {}) {
           signal,
           dontBlock: failingSince !== null,
         });
+        quickExpirySince = null;
         await succeeded();
         for (const event of events) {
           if (Number.isInteger(event.id) && event.id > lastEventId) {
@@ -386,10 +398,14 @@ export function registerHandlers(gladys, options = {}) {
         const error =
           err instanceof ZulipError ? err : new ZulipError(ERROR_KINDS.SERVER, err.message);
         if (error.kind === ERROR_KINDS.QUEUE_EXPIRED) {
-          // Garbage-collected after 10 minutes without a poll: a new queue, read back what was missed.
-          logger.debug('Event queue expired: registering a new one');
           queueId = null;
-          continue;
+          if (now() - openedAt >= QUEUE_MIN_LIFE_MS) {
+            // Garbage-collected after 10 minutes without a poll: a new queue, read back what was missed.
+            logger.debug('Event queue expired: registering a new one');
+            continue;
+          }
+          // Lost as soon as it was opened (a proxy between several servers?): a failure, with a wait.
+          quickExpirySince ??= now();
         }
         const transient = TRANSIENT_KINDS.has(error.kind);
         lastError = error;
@@ -423,17 +439,29 @@ export function registerHandlers(gladys, options = {}) {
 
   /** Handles the messages after `afterId` (a new queue: a restart, an expired queue). */
   async function catchUp(afterId, signal) {
-    try {
-      const messages = await client.recentMessages(CATCH_UP_COUNT, { signal });
-      for (const message of messages) {
-        if (message.id > afterId) {
-          await handleMessage(message);
+    // One narrow per place that matters: busy channels the bot is merely subscribed to
+    // cannot push a missed command out of the window.
+    const narrows = [
+      [{ operator: 'is', operand: 'private' }],
+      ...[...watched.keys()].map((id) => [{ operator: 'stream', operand: id }]),
+    ];
+    const missed = new Map();
+    for (const narrow of narrows) {
+      try {
+        for (const message of await client.recentMessages(CATCH_UP_COUNT, narrow, { signal })) {
+          if (message.id > afterId) {
+            missed.set(message.id, message);
+          }
         }
-      }
-    } catch (err) {
-      if (!signal.aborted) {
+      } catch (err) {
+        if (signal.aborted) {
+          return;
+        }
         logger.debug(`Missed messages not read: ${err.message}`);
       }
+    }
+    for (const message of [...missed.values()].sort((a, b) => a.id - b.id)) {
+      await handleMessage(message);
     }
   }
 
@@ -602,7 +630,7 @@ export function registerHandlers(gladys, options = {}) {
 
   function applyConfig(raw) {
     // Serialized: two saves in a row must never leave two loops running.
-    applying = applying.then(() => doApplyConfig(raw));
+    applying = applying.catch(() => {}).then(() => doApplyConfig(raw));
     return applying;
   }
 

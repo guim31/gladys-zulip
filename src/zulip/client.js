@@ -302,13 +302,18 @@ export class ZulipClient {
     return this.request('DELETE', '/events', { fields: { queue_id: queueId }, signal });
   }
 
-  /** The newest messages the bot can see (its channels and direct messages), oldest first. */
-  async recentMessages(count, { signal } = {}) {
+  /**
+   * The newest messages of a narrow, oldest first: `[{ operator: 'is', operand:
+   * 'private' }]` (the direct messages) or `[{ operator: 'stream', operand: id }]`.
+   * Both operators are understood by every server version.
+   */
+  async recentMessages(count, narrow, { signal } = {}) {
     const data = await this.request('GET', '/messages', {
       query: {
         anchor: 'newest',
         num_before: count,
         num_after: 0,
+        narrow,
         apply_markdown: false,
         client_gravatar: true,
       },
@@ -324,7 +329,8 @@ export class ZulipClient {
   sendMessage({ channel, topic, to, content }, { signal } = {}) {
     const fields = to
       ? { type: 'private', to, content }
-      : { type: 'stream', to: channel, topic, content };
+      : // As JSON: a bare "2024" would be read as the id of a channel.
+        { type: 'stream', to: JSON.stringify(channel), topic, content };
     return this.request('POST', '/messages', { fields, signal });
   }
 

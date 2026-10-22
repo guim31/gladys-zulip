@@ -255,7 +255,10 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   figé (vérifié avec `docker pause`) est déclaré perdu en 2 min 30 environ (90 s de long polling + 60 s). La file vit
   **10 minutes sans sondage** (`idle_queue_timeout_secs: 600`) : une coupure courte ne perd rien ; au-delà,
   `400 BAD_EVENT_QUEUE_ID` → nouvelle file sans délai, et rattrapage par `GET /messages?anchor=newest`
-  (100 derniers, filtrés par identifiant > `lastMessageId` persisté). Au tout premier démarrage,
+  (100 derniers **par narrow** : `is:private` puis `stream:<id>` de chaque canal surveillé, pour qu'un canal
+  bavard non surveillé ne repousse pas une commande hors de la fenêtre ; filtrés par identifiant >
+  `lastMessageId` persisté). Une file perdue moins de 10 s après son ouverture est un échec (attente,
+  perte déclarée au bout d'une minute), jamais une boucle serrée. Au tout premier démarrage,
   `lastMessageId` = `max_message_id` de `register` : l'historique n'est jamais rejoué.
 - **Personnes autorisées** par e-mail ou identifiant d'utilisateur, résolues à chaque connexion par
   `GET /users` ; `contact.id` = l'identifiant Zulip en chaîne, `contact_name` = le nom complet. Jamais un
@@ -276,3 +279,5 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
     `[gladys.jpg](/user_uploads/…)` dans le message direct, que Zulip affiche en vignette.
   - L'API se sert en HTTP simple dans le conteneur (sans `CERTIFICATES`) si l'en-tête `Host` vaut
     `EXTERNAL_HOST`.
+  - Le `to` d'un message de canal est lu **comme du JSON** par le serveur : un nom `2024` viserait le canal
+    d'identifiant 2024. Il part donc en `JSON.stringify(nom)` (vérifié : `"Living room"` passe).

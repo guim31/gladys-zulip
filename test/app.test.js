@@ -341,6 +341,7 @@ test('a short cut keeps the queue: nothing is missed, nothing is replayed', asyn
 test('an expired queue is replaced at once, and what it missed is read back, once', async (t) => {
   const world = await connected(t);
   await say(world, toBot, 'first');
+  world.clock.time += 10 * 60 * 1000; // 10 minutes without a poll (the container was frozen)
   world.server.expireQueues();
   world.clock.time += 1000;
   // Written while no queue existed: only the catch-up can see it.
@@ -457,4 +458,66 @@ test('a channel not watched never fires a trigger', async (t) => {
   const world = await connected(t, { server });
   await say(world, FAMILY, '!heating off');
   assert.deepEqual(world.fake.sceneEvents, []);
+});
+
+test('a queue lost as soon as it opens is a failure with a wait, declared lost after a minute', async (t) => {
+  const world = await connected(t);
+  world.server.dropNewQueues = true;
+  world.server.expireQueues();
+  await settle();
+  assert.equal(world.sleeps.length, 1, 'a wait, not a busy loop');
+  let waited = 0;
+  while (waited < LOST_AFTER_MS) {
+    waited += await world.wake();
+  }
+  assert.equal(world.app.connection, 'disconnected');
+  assert.equal(world.fake.sceneEvents.at(-1).key, TRIGGERS.LOST);
+});
+
+test('the catch-up reads the direct messages and the watched channels, not busy others', async (t) => {
+  const server = createFakeServer();
+  server.channels.get(FAMILY).members.add(BOT_ID); // subscribed, not watched
+  const world = await connected(t, { server });
+  await world.app.stop();
+  world.clock.time += 1000;
+  world.server.publish(ALICE_ID, GARAGE, '!door open');
+  world.server.publish(ALICE_ID, toBot, 'missed');
+  for (let i = 0; i < 150; i += 1) {
+    world.server.publish(MALLORY_ID, FAMILY, `chatter ${i}`);
+  }
+  const again = await connected(t, { server, stored: world.store.data });
+  assert.deepEqual(
+    again.fake.sceneEvents.map((event) => event.data.text),
+    ['!door open', '!door open'],
+  );
+  assert.deepEqual(
+    again.fake.messages.map((m) => m.text),
+    ['missed'],
+  );
+});
+
+test('a channel named with digits is sent by name, never taken for an id', async (t) => {
+  const server = createFakeServer();
+  server.channels.set(2024, { id: 2024, name: '2024', private: false, members: new Set() });
+  const world = await connected(t, { server });
+  const ack = await world.fake.sceneAction(SCENE_ACTION_KEY, { channel: '2024', message: 'x' });
+  assert.equal(ack.data.outputs.sent, true);
+  assert.equal(botMessages(world).at(-1).stream_id, 2024);
+});
+
+test('a configuration saved while Zulip is down still fires connection_lost', async (t) => {
+  const world = await connected(t);
+  world.server.goDown();
+  await settle();
+  await world.fake.configUpdated({ ...BASE_CONFIG, command_prefix: '?' });
+  await settle();
+  assert.equal(world.app.connection, 'connected', 'still connected until the loss is declared');
+  let waited = 0;
+  while (waited < LOST_AFTER_MS) {
+    waited += await world.wake();
+  }
+  assert.deepEqual(
+    world.fake.sceneEvents.map((event) => event.key),
+    [TRIGGERS.LOST],
+  );
 });

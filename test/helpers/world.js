@@ -65,6 +65,7 @@ export function createFakeServer() {
     uploads: [],
     requests: [], // { method, path }
     rejectMessages: false, // a 400, as for a message too long
+    dropNewQueues: false, // a new queue is unknown at once (a proxy mixing two servers)
     clock: () => START,
   };
   let nextQueue = 1;
@@ -139,7 +140,9 @@ export function createFakeServer() {
     }
     if (method === 'POST' && path === '/register') {
       const id = `queue-${nextQueue++}`;
-      server.queues.set(id, { events: [], waiters: [], next: 0 });
+      if (!server.dropNewQueues) {
+        server.queues.set(id, { events: [], waiters: [], next: 0 });
+      }
       return ok({
         ...fixture('register'),
         queue_id: id,
@@ -174,7 +177,11 @@ export function createFakeServer() {
     }
     if (path === '/messages' && method === 'GET') {
       const count = Number(param('num_before'));
-      return ok({ messages: server.messages.filter(canSee).slice(-count) });
+      const [term] = JSON.parse(param('narrow') ?? '[]');
+      const inNarrow = (m) =>
+        !term ||
+        (term.operator === 'is' ? m.type === 'private' : m.stream_id === Number(term.operand));
+      return ok({ messages: server.messages.filter(canSee).filter(inNarrow).slice(-count) });
     }
     if (method === 'POST' && path === '/messages') {
       if (server.rejectMessages) {
@@ -187,10 +194,11 @@ export function createFakeServer() {
           return error(400, 'BAD_REQUEST', 'Invalid user ID');
         }
       } else {
-        const channel = channelByName(param('to'));
+        const name = JSON.parse(param('to')); // a channel name as JSON, as Zulip parses it
+        const channel = channelByName(name);
         if (!channel) {
-          return error(400, 'STREAM_DOES_NOT_EXIST', `Channel '${param('to')}' does not exist`, {
-            stream: param('to'),
+          return error(400, 'STREAM_DOES_NOT_EXIST', `Channel '${name}' does not exist`, {
+            stream: name,
           });
         }
         if (!visible(channel)) {
