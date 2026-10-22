@@ -1,177 +1,746 @@
 {
   "manifest_version": 1,
-  "type": "device",
-  "name": "Demo Devices Template",
+  "type": "communication",
+  "name": "Zulip",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Talk to Gladys from Zulip, post to channels and run scenes on messages and commands.",
+    "fr": "Parlez à Gladys depuis Zulip, écrivez dans des canaux, lancez des scènes sur message.",
+    "de": "Sprich mit Gladys über Zulip, schreib in Kanäle, starte Szenen bei Nachrichten oder Befehlen.",
+    "es": "Hable con Gladys desde Zulip, escriba en canales y lance escenas con mensajes o comandos."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-zulip:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-zulip/main/cover.png",
+  "categories": ["notifications"],
   "transports": ["local", "cloud"],
+  "messaging": {
+    "receive": true
+  },
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Getting started",
+        "fr": "Pour commencer",
+        "de": "Erste Schritte",
+        "es": "Para empezar"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "In Zulip, create a generic bot (Personal settings → Bots → Add a new bot) and copy its e-mail and API key. Then write to it in a direct message.",
+        "fr": "Dans Zulip, créez un robot générique (Paramètres personnels → Bots → Ajouter un nouveau bot) et copiez son e-mail et sa clé d'API. Écrivez-lui ensuite en message direct.",
+        "de": "Leg in Zulip einen generischen Bot an (Persönliche Einstellungen → Bots → Neuen Bot hinzufügen) und kopiere seine E-Mail und seinen API-Schlüssel. Schreib ihm dann eine Direktnachricht.",
+        "es": "En Zulip, cree un bot genérico (Configuración personal → Bots → Añadir un nuevo bot) y copie su correo y su clave de API. Después, escríbale un mensaje directo."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-zulip/blob/main/docs/en.md",
+          "label": {
+            "en": "Documentation",
+            "fr": "Documentation",
+            "de": "Dokumentation",
+            "es": "Documentación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "server_url",
+      "type": "string",
+      "label": {
+        "en": "Organization address",
+        "fr": "Adresse de l'organisation",
+        "de": "Adresse der Organisation",
+        "es": "Dirección de la organización"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "The address of your Zulip organization, as in the browser, e.g. https://example.zulipchat.com or http://192.168.1.20.",
+        "fr": "L'adresse de votre organisation Zulip, comme dans le navigateur, ex. https://example.zulipchat.com ou http://192.168.1.20.",
+        "de": "Die Adresse deiner Zulip-Organisation wie im Browser, z. B. https://example.zulipchat.com oder http://192.168.1.20.",
+        "es": "La dirección de su organización Zulip, como en el navegador, p. ej. https://example.zulipchat.com o http://192.168.1.20."
+      },
+      "placeholder": {
+        "en": "https://example.zulipchat.com",
+        "fr": "https://example.zulipchat.com",
+        "de": "https://example.zulipchat.com",
+        "es": "https://example.zulipchat.com"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "bot_email",
+      "type": "string",
+      "label": {
+        "en": "Bot e-mail",
+        "fr": "E-mail du robot",
+        "de": "E-Mail des Bots",
+        "es": "Correo del bot"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
+      "description": {
+        "en": "The e-mail of the bot, shown in Personal settings → Bots, e.g. gladys-bot@example.zulipchat.com.",
+        "fr": "L'e-mail du robot, affiché dans Paramètres personnels → Bots, ex. gladys-bot@example.zulipchat.com.",
+        "de": "Die E-Mail des Bots, angezeigt unter Persönliche Einstellungen → Bots, z. B. gladys-bot@example.zulipchat.com.",
+        "es": "El correo del bot, que aparece en Configuración personal → Bots, p. ej. gladys-bot@example.zulipchat.com."
+      },
+      "placeholder": {
+        "en": "gladys-bot@example.zulipchat.com",
+        "fr": "gladys-bot@example.zulipchat.com",
+        "de": "gladys-bot@example.zulipchat.com",
+        "es": "gladys-bot@example.zulipchat.com"
+      },
       "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "default": ""
     },
     {
-      "key": "unit",
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key",
+        "fr": "Clé d'API",
+        "de": "API-Schlüssel",
+        "es": "Clave de API"
+      },
+      "description": {
+        "en": "The API key of the bot (Personal settings → Bots). A generic bot, not an incoming webhook.",
+        "fr": "La clé d'API du robot (Paramètres personnels → Bots). Un robot générique, pas un webhook entrant.",
+        "de": "Der API-Schlüssel des Bots (Persönliche Einstellungen → Bots). Ein generischer Bot, kein eingehender Webhook.",
+        "es": "La clave de API del bot (Configuración personal → Bots). Un bot genérico, no un webhook entrante."
+      }
+    },
+    {
+      "key": "allowed_users",
+      "type": "string",
+      "label": {
+        "en": "Allowed people",
+        "fr": "Personnes autorisées",
+        "de": "Erlaubte Personen",
+        "es": "Personas autorizadas"
+      },
+      "description": {
+        "en": "E-mails (as shown in Zulip) or user ids of the people the bot listens to, separated by commas. Empty: the bot answers nobody.",
+        "fr": "E-mails (tels qu'affichés dans Zulip) ou identifiants des personnes que le robot écoute, séparés par des virgules. Vide : le robot ne répond à personne.",
+        "de": "E-Mails (wie in Zulip angezeigt) oder Benutzer-IDs der Personen, auf die der Bot hört, durch Kommas getrennt. Leer: Der Bot antwortet niemandem.",
+        "es": "Correos (tal como aparecen en Zulip) o identificadores de las personas a las que el bot escucha, separados por comas. Vacío: el bot no responde a nadie."
+      },
+      "placeholder": {
+        "en": "alice@example.org, 12",
+        "fr": "alice@example.org, 12",
+        "de": "alice@example.org, 12",
+        "es": "alice@example.org, 12"
+      },
+      "default": ""
+    },
+    {
+      "key": "channels",
+      "type": "string",
+      "label": {
+        "en": "Watched channels",
+        "fr": "Canaux surveillés",
+        "de": "Beobachtete Kanäle",
+        "es": "Canales vigilados"
+      },
+      "description": {
+        "en": "Channels whose messages trigger scenes, by name, separated by commas. The bot joins public channels; subscribe it to private ones.",
+        "fr": "Canaux dont les messages déclenchent des scènes, par nom, séparés par des virgules. Le robot rejoint les canaux publics ; abonnez-le aux privés.",
+        "de": "Kanäle, deren Nachrichten Szenen auslösen, nach Name, durch Kommas getrennt. Der Bot tritt öffentlichen Kanälen bei; abonniere ihn für private.",
+        "es": "Canales cuyos mensajes activan escenas, por nombre, separados por comas. El bot se une a los canales públicos; suscríbalo a los privados."
+      },
+      "placeholder": {
+        "en": "garage",
+        "fr": "garage",
+        "de": "garage",
+        "es": "garaje"
+      },
+      "default": ""
+    },
+    {
+      "key": "command_prefix",
+      "type": "string",
+      "label": {
+        "en": "Command prefix",
+        "fr": "Préfixe des commandes",
+        "de": "Befehlspräfix",
+        "es": "Prefijo de los comandos"
+      },
+      "description": {
+        "en": "A message starting with it is a command, e.g. !lights off. One to three characters.",
+        "fr": "Un message qui commence par lui est une commande, ex. !lumieres off. Un à trois caractères.",
+        "de": "Eine Nachricht, die damit beginnt, ist ein Befehl, z. B. !licht aus. Ein bis drei Zeichen.",
+        "es": "Un mensaje que empieza por él es un comando, p. ej. !luces off. De uno a tres caracteres."
+      },
+      "placeholder": {
+        "en": "!",
+        "fr": "!",
+        "de": "!",
+        "es": "!"
+      },
+      "default": "!"
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+      "label": {
+        "en": "Language of the bot",
+        "fr": "Langue du robot",
+        "de": "Sprache des Bots",
+        "es": "Idioma del bot"
       },
-      "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "description": {
+        "en": "Language of what the bot writes before a person is linked, and of the reports.",
+        "fr": "Langue de ce que le robot écrit avant qu'une personne soit liée, et des comptes rendus.",
+        "de": "Sprache dessen, was der Bot schreibt, bevor eine Person verknüpft ist, und der Berichte.",
+        "es": "Idioma de lo que escribe el bot antes de vincular a una persona, y de los informes."
+      },
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "description": {
+        "en": "Checks the bot credentials and tells which watched channels and allowed people it found.",
+        "fr": "Vérifie les identifiants du robot et indique les canaux surveillés et personnes autorisées trouvés.",
+        "de": "Prüft die Zugangsdaten des Bots und zeigt, welche beobachteten Kanäle und erlaubten Personen er gefunden hat.",
+        "es": "Comprueba las credenciales del bot e indica qué canales vigilados y personas autorizadas ha encontrado."
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "message_received",
+      "label": {
+        "en": "Zulip message received",
+        "fr": "Message Zulip reçu",
+        "de": "Zulip-Nachricht empfangen",
+        "es": "Mensaje Zulip recibido"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "An allowed person wrote in a watched channel.",
+        "fr": "Une personne autorisée a écrit dans un canal surveillé.",
+        "de": "Eine erlaubte Person hat in einem beobachteten Kanal geschrieben.",
+        "es": "Una persona autorizada ha escrito en un canal vigilado."
       },
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "key": "channel",
+          "type": "string",
+          "label": {
+            "en": "Channel",
+            "fr": "Canal",
+            "de": "Kanal",
+            "es": "Canal"
+          },
+          "placeholder": {
+            "en": "As in the configuration",
+            "fr": "Comme dans la configuration",
+            "de": "Wie in der Konfiguration",
+            "es": "Como en la configuración"
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "topic",
+          "type": "string",
+          "label": {
+            "en": "Topic",
+            "fr": "Sujet",
+            "de": "Thema",
+            "es": "Tema"
+          },
+          "description": {
+            "en": "Only this topic of the channel. Empty: any topic.",
+            "fr": "Seulement ce sujet du canal. Vide : tous les sujets.",
+            "de": "Nur dieses Thema des Kanals. Leer: jedes Thema.",
+            "es": "Solo este tema del canal. Vacío: cualquier tema."
+          }
+        },
+        {
+          "key": "sender",
+          "type": "string",
+          "label": {
+            "en": "Sender",
+            "fr": "Expéditeur",
+            "de": "Absender",
+            "es": "Remitente"
+          },
+          "placeholder": {
+            "en": "alice@example.org",
+            "fr": "alice@example.org",
+            "de": "alice@example.org",
+            "es": "alice@example.org"
+          },
+          "description": {
+            "en": "As in the allowed people of the configuration (e-mail or user id).",
+            "fr": "Comme dans les personnes autorisées de la configuration (e-mail ou identifiant).",
+            "de": "Wie bei den erlaubten Personen der Konfiguration (E-Mail oder Benutzer-ID).",
+            "es": "Como en las personas autorizadas de la configuración (correo o identificador)."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "text",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Message",
+            "fr": "Message",
+            "de": "Nachricht",
+            "es": "Mensaje"
+          }
+        },
+        {
+          "key": "sender",
+          "type": "string",
+          "label": {
+            "en": "Sender",
+            "fr": "Expéditeur",
+            "de": "Absender",
+            "es": "Remitente"
+          }
+        },
+        {
+          "key": "sender_name",
+          "type": "string",
+          "label": {
+            "en": "Sender name",
+            "fr": "Nom de l'expéditeur",
+            "de": "Name des Absenders",
+            "es": "Nombre del remitente"
+          }
+        },
+        {
+          "key": "channel",
+          "type": "string",
+          "label": {
+            "en": "Channel",
+            "fr": "Canal",
+            "de": "Kanal",
+            "es": "Canal"
+          }
+        },
+        {
+          "key": "topic",
+          "type": "string",
+          "label": {
+            "en": "Topic",
+            "fr": "Sujet",
+            "de": "Thema",
+            "es": "Tema"
+          }
+        },
+        {
+          "key": "channel_id",
+          "type": "string",
+          "label": {
+            "en": "Channel id",
+            "fr": "Identifiant du canal",
+            "de": "Kanal-ID",
+            "es": "Identificador del canal"
+          }
+        }
+      ]
+    },
+    {
+      "key": "command_received",
+      "label": {
+        "en": "Zulip command received",
+        "fr": "Commande Zulip reçue",
+        "de": "Zulip-Befehl empfangen",
+        "es": "Comando Zulip recibido"
+      },
+      "description": {
+        "en": "An allowed person wrote a command (prefix, then a word) in a watched channel.",
+        "fr": "Une personne autorisée a écrit une commande (préfixe puis un mot) dans un canal surveillé.",
+        "de": "Eine erlaubte Person hat einen Befehl (Präfix, dann ein Wort) in einem beobachteten Kanal geschrieben.",
+        "es": "Una persona autorizada ha escrito un comando (prefijo y una palabra) en un canal vigilado."
+      },
+      "fields": [
+        {
+          "key": "command",
+          "type": "string",
+          "label": {
+            "en": "Command",
+            "fr": "Commande",
+            "de": "Befehl",
+            "es": "Comando"
+          },
+          "description": {
+            "en": "The word after the prefix, in lower case, without the prefix: lights for !Lights off.",
+            "fr": "Le mot après le préfixe, en minuscules, sans le préfixe : lumieres pour !Lumieres off.",
+            "de": "Das Wort nach dem Präfix, kleingeschrieben, ohne Präfix: licht für !Licht aus.",
+            "es": "La palabra tras el prefijo, en minúsculas, sin el prefijo: luces para !Luces off."
+          },
+          "placeholder": {
+            "en": "lights",
+            "fr": "lumieres",
+            "de": "licht",
+            "es": "luces"
+          }
+        },
+        {
+          "key": "channel",
+          "type": "string",
+          "label": {
+            "en": "Channel",
+            "fr": "Canal",
+            "de": "Kanal",
+            "es": "Canal"
+          },
+          "placeholder": {
+            "en": "As in the configuration",
+            "fr": "Comme dans la configuration",
+            "de": "Wie in der Konfiguration",
+            "es": "Como en la configuración"
+          }
+        },
+        {
+          "key": "topic",
+          "type": "string",
+          "label": {
+            "en": "Topic",
+            "fr": "Sujet",
+            "de": "Thema",
+            "es": "Tema"
+          },
+          "description": {
+            "en": "Only this topic of the channel. Empty: any topic.",
+            "fr": "Seulement ce sujet du canal. Vide : tous les sujets.",
+            "de": "Nur dieses Thema des Kanals. Leer: jedes Thema.",
+            "es": "Solo este tema del canal. Vacío: cualquier tema."
+          }
+        },
+        {
+          "key": "sender",
+          "type": "string",
+          "label": {
+            "en": "Sender",
+            "fr": "Expéditeur",
+            "de": "Absender",
+            "es": "Remitente"
+          },
+          "placeholder": {
+            "en": "alice@example.org",
+            "fr": "alice@example.org",
+            "de": "alice@example.org",
+            "es": "alice@example.org"
+          },
+          "description": {
+            "en": "As in the allowed people of the configuration (e-mail or user id).",
+            "fr": "Comme dans les personnes autorisées de la configuration (e-mail ou identifiant).",
+            "de": "Wie bei den erlaubten Personen der Konfiguration (E-Mail oder Benutzer-ID).",
+            "es": "Como en las personas autorizadas de la configuración (correo o identificador)."
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "command",
+          "type": "string",
+          "label": {
+            "en": "Command",
+            "fr": "Commande",
+            "de": "Befehl",
+            "es": "Comando"
+          }
+        },
+        {
+          "key": "arguments",
+          "type": "string",
+          "label": {
+            "en": "Arguments",
+            "fr": "Arguments",
+            "de": "Argumente",
+            "es": "Argumentos"
+          }
+        },
+        {
+          "key": "text",
+          "type": "string",
+          "label": {
+            "en": "Message",
+            "fr": "Message",
+            "de": "Nachricht",
+            "es": "Mensaje"
+          }
+        },
+        {
+          "key": "sender",
+          "type": "string",
+          "label": {
+            "en": "Sender",
+            "fr": "Expéditeur",
+            "de": "Absender",
+            "es": "Remitente"
+          }
+        },
+        {
+          "key": "sender_name",
+          "type": "string",
+          "label": {
+            "en": "Sender name",
+            "fr": "Nom de l'expéditeur",
+            "de": "Name des Absenders",
+            "es": "Nombre del remitente"
+          }
+        },
+        {
+          "key": "channel",
+          "type": "string",
+          "label": {
+            "en": "Channel",
+            "fr": "Canal",
+            "de": "Kanal",
+            "es": "Canal"
+          }
+        },
+        {
+          "key": "topic",
+          "type": "string",
+          "label": {
+            "en": "Topic",
+            "fr": "Sujet",
+            "de": "Thema",
+            "es": "Tema"
+          }
+        },
+        {
+          "key": "channel_id",
+          "type": "string",
+          "label": {
+            "en": "Channel id",
+            "fr": "Identifiant du canal",
+            "de": "Kanal-ID",
+            "es": "Identificador del canal"
+          }
+        }
+      ]
+    },
+    {
+      "key": "connection_lost",
+      "label": {
+        "en": "Zulip connection lost",
+        "fr": "Connexion Zulip perdue",
+        "de": "Zulip-Verbindung verloren",
+        "es": "Conexión Zulip perdida"
+      },
+      "description": {
+        "en": "The bot cannot reach the Zulip server any more (for a minute, or refused key).",
+        "fr": "Le robot ne joint plus le serveur Zulip (depuis une minute, ou clé refusée).",
+        "de": "Der Bot erreicht den Zulip-Server nicht mehr (seit einer Minute, oder Schlüssel abgelehnt).",
+        "es": "El bot ya no alcanza el servidor Zulip (desde hace un minuto, o clave rechazada)."
+      },
+      "variables": [
+        {
+          "key": "error",
+          "type": "string",
+          "label": {
+            "en": "Error",
+            "fr": "Erreur",
+            "de": "Fehler",
+            "es": "Error"
+          }
+        }
+      ]
+    },
+    {
+      "key": "connection_restored",
+      "label": {
+        "en": "Zulip connection restored",
+        "fr": "Connexion Zulip rétablie",
+        "de": "Zulip-Verbindung wiederhergestellt",
+        "es": "Conexión Zulip restablecida"
+      },
+      "description": {
+        "en": "The bot reaches the Zulip server again after a lost connection.",
+        "fr": "Le robot joint de nouveau le serveur Zulip après une perte de connexion.",
+        "de": "Der Bot erreicht den Zulip-Server nach einem Verbindungsverlust wieder.",
+        "es": "El bot vuelve a alcanzar el servidor Zulip tras una pérdida de conexión."
+      },
+      "variables": [
+        {
+          "key": "user",
+          "type": "string",
+          "label": {
+            "en": "Bot account (e-mail)",
+            "fr": "Compte du robot (e-mail)",
+            "de": "Bot-Konto (E-Mail)",
+            "es": "Cuenta del bot (correo)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "send_message",
+      "label": {
+        "en": "Send a Zulip message",
+        "fr": "Envoyer un message Zulip",
+        "de": "Zulip-Nachricht senden",
+        "es": "Enviar un mensaje Zulip"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Writes a message (Markdown, scene variables) in a channel topic, or to a person (e-mail).",
+        "fr": "Écrit un message (Markdown, variables de scène) dans un sujet de canal, ou à une personne (e-mail).",
+        "de": "Schreibt eine Nachricht (Markdown, Szenenvariablen) in ein Kanalthema oder an eine Person (E-Mail).",
+        "es": "Escribe un mensaje (Markdown, variables de escena) en un tema de canal, o a una persona (correo)."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "key": "channel",
+          "type": "string",
+          "label": {
+            "en": "Channel or person",
+            "fr": "Canal ou personne",
+            "de": "Kanal oder Person",
+            "es": "Canal o persona"
+          },
+          "description": {
+            "en": "A channel name, or the e-mail of a person (or @ and a user id) for a direct message.",
+            "fr": "Un nom de canal, ou l'e-mail d'une personne (ou @ et un identifiant) pour un message direct.",
+            "de": "Ein Kanalname oder die E-Mail einer Person (oder @ und eine Benutzer-ID) für eine Direktnachricht.",
+            "es": "Un nombre de canal, o el correo de una persona (o @ y un identificador) para un mensaje directo."
+          },
+          "placeholder": {
+            "en": "garage",
+            "fr": "garage",
+            "de": "garage",
+            "es": "garaje"
+          },
+          "required": true
+        },
+        {
+          "key": "topic",
+          "type": "string",
+          "label": {
+            "en": "Topic",
+            "fr": "Sujet",
+            "de": "Thema",
+            "es": "Tema"
+          },
+          "description": {
+            "en": "The topic of the channel message. Empty: Gladys. Ignored for a direct message.",
+            "fr": "Le sujet du message dans le canal. Vide : Gladys. Ignoré pour un message direct.",
+            "de": "Das Thema der Kanalnachricht. Leer: Gladys. Bei einer Direktnachricht ignoriert.",
+            "es": "El tema del mensaje en el canal. Vacío: Gladys. Se ignora en un mensaje directo."
+          },
+          "placeholder": {
+            "en": "Alerts",
+            "fr": "Alertes",
+            "de": "Warnungen",
+            "es": "Alertas"
+          }
+        },
+        {
+          "key": "message",
+          "type": "string",
+          "label": {
+            "en": "Message",
+            "fr": "Message",
+            "de": "Nachricht",
+            "es": "Mensaje"
+          },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "sent",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Sent",
+            "fr": "Envoyé",
+            "de": "Gesendet",
+            "es": "Enviado"
+          }
+        },
+        {
+          "key": "post_id",
+          "type": "string",
+          "label": {
+            "en": "Message id",
+            "fr": "Identifiant du message",
+            "de": "Nachrichten-ID",
+            "es": "Identificador del mensaje"
+          }
+        },
+        {
+          "key": "error",
+          "type": "string",
+          "label": {
+            "en": "Error",
+            "fr": "Erreur",
+            "de": "Fehler",
+            "es": "Error"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "zulip",
+      "label": {
+        "en": "Zulip",
+        "fr": "Zulip",
+        "de": "Zulip",
+        "es": "Zulip"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Bot connection, watched channels and the last messages received in them.",
+        "fr": "Connexion du robot, canaux surveillés et derniers messages qui y sont reçus.",
+        "de": "Verbindung des Bots, beobachtete Kanäle und die letzten Nachrichten darin.",
+        "es": "Conexión del bot, canales vigilados y últimos mensajes recibidos en ellos."
+      },
+      "icon": "message-circle",
+      "action_timeout_seconds": 30
     }
   ]
 }

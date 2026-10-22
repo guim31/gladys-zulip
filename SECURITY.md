@@ -30,6 +30,23 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration keeps and where:
+
+- The configuration (organization address, bot e-mail, API key, allowed
+  people, watched channels) is stored by Gladys; the API key is a `secret`
+  field.
+- `/data/zulip-state.json` holds the id of the last message seen and of the
+  last messages handled (to read back what was posted during a restart,
+  never twice), and the last 5 messages of the watched channels (for the
+  widget). No direct message is stored, nor the API key.
+- The integration only talks to the configured Zulip server (HTTPS or HTTP)
+  and to Gladys. It never logs the API key.
+
+The bot passes the messages of a linked person to Gladys with the authority of
+that Gladys user, and only for the people of the allowed list (never a bot).
+The Zulip server can read every message, as for any Zulip conversation.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and the third-party services and devices the integration talks to (the
+Zulip server and its apps).

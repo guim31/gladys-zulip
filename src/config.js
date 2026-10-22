@@ -1,45 +1,117 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
-//
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Integration configuration (the `config_schema` of the manifest), normalized
+// so the rest of the code never deals with `undefined`, stray spaces or a
+// half-typed address.
 // -----------------------------------------------------------------------------
 
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
 // Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+// `config_schema` of the manifest (test/manifest.test.js).
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  server_url: '',
+  bot_email: '',
+  api_key: '',
+  allowed_users: '',
+  channels: '',
+  command_prefix: '!',
+  language: 'fr',
 };
+
+const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+
+// An e-mail address, as Zulip shows it (the real one, or user12@zulip.example.org
+// when the organization hides addresses).
+const EMAIL = /^[^\s@,;]+@[^\s@,;]+$/;
+// A user id, as in the profile card of the person.
+const USER_ID = /^[1-9][0-9]{0,9}$/;
+
+/** Splits a list typed in a text field: commas, semicolons, spaces or new lines. */
+export function parseList(value) {
+  const items = trimmed(value)
+    .split(/[\s,;]+/)
+    .map((item) => item.trim())
+    .filter((item) => item !== '');
+  return [...new Set(items)];
+}
+
+/**
+ * A person as typed in the allowed list or in a scene: "alice@example.org",
+ * "@alice@example.org" or a user id ("12"). Lower case; null when neither.
+ */
+export function parsePerson(value) {
+  const text = trimmed(value).replace(/^@/, '').toLowerCase();
+  return EMAIL.test(text) || USER_ID.test(text) ? text : null;
+}
+
+/**
+ * A channel name as typed: "garage", "#garage", "#**garage**" (Markdown of a
+ * channel link). Channel names may hold spaces: the list of channels is split
+ * on commas, semicolons and new lines only.
+ */
+export function parseChannelName(value) {
+  const text = trimmed(value)
+    .replace(/^#\*\*(.+)\*\*$/, '$1')
+    .replace(/^#/, '')
+    .trim();
+  return text === '' || text.length > 60 ? null : text;
+}
+
+export function parseChannelList(value) {
+  const names = trimmed(value)
+    .split(/[,;\n]+/)
+    .map(parseChannelName)
+    .filter(Boolean);
+  // Zulip compares channel names without case.
+  const unique = new Map(names.map((name) => [name.toLowerCase(), name]));
+  return [...unique.values()];
+}
+
+/**
+ * The server address as a URL, or null when it is empty or not understood.
+ * A bare host name gets https://. A sub-path (https://example.org/chat) is kept.
+ * @param {string} value
+ * @returns {URL|null}
+ */
+export function parseServer(value) {
+  const text = trimmed(value).replace(/\/+$/, '');
+  if (text === '') {
+    return null;
+  }
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+      return null;
+    }
+    url.search = '';
+    url.hash = '';
+    // Pasted from the browser: keep the server, not the page.
+    url.pathname = url.pathname
+      .replace(/\/(?:api|json)\/.*$/, '')
+      .replace(/\/#.*$/, '')
+      .replace(/\/+$/, '');
+    return url;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * @param {Record<string, unknown>} [raw] config returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const config = raw ?? {};
+  const prefix = trimmed(config.command_prefix);
+  const people = parseList(config.allowed_users).map(parsePerson).filter(Boolean);
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    server_url: trimmed(config.server_url),
+    bot_email: trimmed(config.bot_email).toLowerCase(),
+    api_key: trimmed(config.api_key),
+    allowed_users: [...new Set(people)],
+    channels: parseChannelList(config.channels),
+    // One to three characters, no space: "!" by default ("/" opens the slash commands of Zulip).
+    command_prefix: prefix === '' || prefix.length > 3 ? DEFAULT_CONFIG.command_prefix : prefix,
+    language: LANGUAGES.includes(config.language) ? config.language : DEFAULT_CONFIG.language,
   };
 }

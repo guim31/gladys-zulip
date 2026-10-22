@@ -1,0 +1,59 @@
+{
+  "result": "success",
+  "msg": "",
+  "members": [
+    {
+      "email": "user8@zulip.test",
+      "user_id": 8,
+      "avatar_version": 1,
+      "is_admin": true,
+      "is_owner": true,
+      "is_guest": false,
+      "role": 100,
+      "is_bot": false,
+      "full_name": "Alice Martin",
+      "timezone": "",
+      "is_active": true,
+      "date_joined": "2026-10-22T21:09+00:00",
+      "delivery_email": null,
+      "is_imported_stub": false,
+      "avatar_url": "/user_avatars/2/d738def157b3799c8ea374cb2fff4c99c7687afc.png"
+    },
+    {
+      "email": "gladys-bot@zulip.test",
+      "user_id": 9,
+      "avatar_version": 1,
+      "is_admin": false,
+      "is_owner": false,
+      "is_guest": false,
+      "role": 400,
+      "is_bot": true,
+      "full_name": "Gladys",
+      "timezone": "",
+      "is_active": true,
+      "date_joined": "2026-10-22T21:09+00:00",
+      "delivery_email": "gladys-bot@zulip.test",
+      "is_imported_stub": false,
+      "avatar_url": "/user_avatars/2/383ed58a7b4e56fd68737c6cadce1cba83137545.png",
+      "bot_type": 1,
+      "bot_owner_id": 8
+    },
+    {
+      "email": "user10@zulip.test",
+      "user_id": 10,
+      "avatar_version": 1,
+      "is_admin": false,
+      "is_owner": false,
+      "is_guest": false,
+      "role": 400,
+      "is_bot": false,
+      "full_name": "Mallory Doe",
+      "timezone": "",
+      "is_active": true,
+      "date_joined": "2026-10-22T21:09+00:00",
+      "delivery_email": null,
+      "is_imported_stub": false,
+      "avatar_url": "/user_avatars/2/9ce87dca6622f79a011449fc1c22ddbfb70c29b0.png"
+    }
+  ]
+}

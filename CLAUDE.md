@@ -32,15 +32,17 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/app.js                        the integration: connection loop (event queue), catch-up, linking,
+                                  triggers, scene action, onSendMessage, widget, test action
+src/zulip/client.js               REST API /api/v1 over fetch, typed errors (ZulipError.kind)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+src/texts.js                      four-language texts outside the widget (status, report, bot)
+src/widgets.js                    the "zulip" dashboard widget
+src/store.js, src/log.js          /data persistence (atomic writes), one-line repeated failures
+gladys-assistant-integration.json manifest: communication type, receive: true, triggers, action...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (mandatory)
+test/                             node --test, fake Gladys of the SDK + fake Zulip (REST, event queues)
+test/fixtures/zulip/              answers recorded from a real Zulip 12.3 (docker-zulip, test accounts)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +72,10 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, what the bot writes, and `docs/en.md`,
+  `docs/fr.md`, `docs/de.md`, `docs/es.md`, kept in sync
+  (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +237,47 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Zulip (cette intégration)
+
+- **Même architecture et mêmes clés que `guim31/gladys-mattermost`** et `gladys-rocketchat` (type
+  `communication`, `messaging.receive: true`, liaison par code, liste blanche vide = personne, `applyConfig`
+  sérialisé, `connection_restored` seulement après un `connection_lost` émis, délai unique de 4,5 s dans
+  `onSendMessage`, journaux calmes, rattrapage borné à 5 min et dédoublonné par identifiant). Ajouts propres
+  à Zulip : filtre et variable `topic`, variable `sender_name`, champ `topic` de l'action (`Gladys` si vide).
+  `post_id` garde son nom (clé partagée) mais porte l'identifiant du message Zulip. `linkContact` et
+  `publishMessage` n'ont été vérifiés que contre le faux Gladys du SDK.
+- **Authentification** : HTTP Basic `e-mail du robot:clé d'API`, d'un **robot générique** (`bot_type` 1).
+- **Temps réel** : file d'événements, `POST /register` (`event_types: ["message"]`, `apply_markdown: false`
+  pour recevoir le Markdown tapé et non du HTML), puis `GET /events` en long polling (le serveur répond par
+  un `heartbeat` au bout d'environ 50 s ; délai client 90 s). Après un échec, le sondage suivant passe
+  `dont_block=true` avec un délai de 15 s : le retour du serveur se voit tout de suite, et un serveur
+  figé (vérifié avec `docker pause`) est déclaré perdu en 2 min 30 environ (90 s de long polling + 60 s). La file vit
+  **10 minutes sans sondage** (`idle_queue_timeout_secs: 600`) : une coupure courte ne perd rien ; au-delà,
+  `400 BAD_EVENT_QUEUE_ID` → nouvelle file sans délai, et rattrapage par `GET /messages?anchor=newest`
+  (100 derniers **par narrow** : `is:private` puis `stream:<id>` de chaque canal surveillé, pour qu'un canal
+  bavard non surveillé ne repousse pas une commande hors de la fenêtre ; filtrés par identifiant >
+  `lastMessageId` persisté). Une file perdue moins de 10 s après son ouverture est un échec (attente,
+  perte déclarée au bout d'une minute), jamais une boucle serrée. Au tout premier démarrage,
+  `lastMessageId` = `max_message_id` de `register` : l'historique n'est jamais rejoué.
+- **Personnes autorisées** par e-mail ou identifiant d'utilisateur, résolues à chaque connexion par
+  `GET /users` ; `contact.id` = l'identifiant Zulip en chaîne, `contact_name` = le nom complet. Jamais un
+  robot (son propriétaire pourrait le faire parler) ni un compte désactivé.
+- **Pièges payés contre un vrai Zulip 12.3 (docker-zulip, 22/10/2026)** :
+  - **Les e-mails sont masqués par défaut** : le robot voit `user8@zulip.test` dans `email` et
+    `delivery_email: null`. D'où l'identifiant accepté partout, et une ligne info (une fois par personne)
+    donnant l'identifiant de quiconque écrit au robot sans être autorisé.
+  - **`POST /users/me/subscriptions` avec un nom inconnu CRÉE le canal** (succès, `subscribed`) : toujours
+    `GET /get_stream_id` d'abord. Un canal privé dont le robot n'est pas membre y répond
+    `400 BAD_REQUEST "Invalid channel name"`, comme un nom inconnu.
+  - Le robot écrit dans un canal public **sans y être abonné**, et même dans un **canal privé dont son
+    propriétaire est membre**. Canal inexistant : `400 STREAM_DOES_NOT_EXIST`.
+  - Les messages directs arrivent en `type: "private"` (même en 12.3), `display_recipient` = la liste des
+    participants, robot compris : deux exactement pour une conversation avec Gladys. Les horodatages sont
+    en **secondes**. Un mauvais couple e-mail/clé : `401 UNAUTHORIZED`.
+  - `POST /user_uploads` renvoie `uri` et `url` (chemin relatif) : l'image part en lien Markdown
+    `[gladys.jpg](/user_uploads/…)` dans le message direct, que Zulip affiche en vignette.
+  - L'API se sert en HTTP simple dans le conteneur (sans `CERTIFICATES`) si l'en-tête `Host` vaut
+    `EXTERNAL_HOST`.
+  - Le `to` d'un message de canal est lu **comme du JSON** par le serveur : un nom `2024` viserait le canal
+    d'identifiant 2024. Il part donc en `JSON.stringify(nom)` (vérifié : `"Living room"` passe).

@@ -1,0 +1,5 @@
+{
+  "result": "error",
+  "msg": "Invalid channel name 'family'",
+  "code": "BAD_REQUEST"
+}

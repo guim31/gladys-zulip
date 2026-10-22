@@ -1,0 +1,11 @@
+{
+  "result": "success",
+  "msg": "",
+  "queue_id": "e48bd8df-5a0a-4964-9720-8226b3f2f737",
+  "idle_queue_timeout_secs": 600,
+  "zulip_version": "12.3",
+  "zulip_feature_level": 500,
+  "zulip_merge_base": "",
+  "max_message_id": -1,
+  "last_event_id": -1
+}

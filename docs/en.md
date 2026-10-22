@@ -1,61 +1,149 @@
-# Demo Devices Template
+# Zulip
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Talk to Gladys from [Zulip](https://zulip.com), the open-source team chat organized in channels and topics,
+the way the Telegram bot of Gladys works: ask a question, run a scene, receive the messages of Gladys in a
+direct message. The integration also posts in Zulip channels from your scenes, and starts scenes when a
+message or a command such as `!lights off` is written in a channel it watches. It uses a generic bot of your
+Zulip organization: a server you host on the local network, or Zulip Cloud.
 
-## What you get
+> **Developed without the hardware: feedback welcome.** The integration was tested against a real Zulip
+> server (12.3, in Docker), but not inside a real Gladys nor with every Zulip app. Please report what works
+> and what does not in the [issues](https://github.com/guim31/gladys-zulip/issues) or on the
+> [Gladys forum](https://community.gladysassistant.com).
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## What you need
 
-## Configuration
+- Gladys Assistant **5.1.0** or later.
+- A Zulip organization Gladys can reach: a self-hosted server (version 7 or later) or Zulip Cloud (the free
+  plan is enough).
+- A **generic bot** of this organization (not an incoming webhook nor an outgoing webhook bot). Do not use
+  your personal account: the bot answers in its name.
+- The e-mail or the user id of each person allowed to talk to the bot.
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+## Set up
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+1. In Zulip, **Personal settings → Bots → Add a new bot**: type **Generic bot**, a name such as `Gladys`,
+   a bot e-mail such as `gladys-bot`. Zulip gives it an e-mail such as `gladys-bot@example.zulipchat.com`.
+2. On the card of the bot, copy its **e-mail** and its **API key** (the key icon, or **Download zuliprc**).
+3. In Gladys, **Integrations → Zulip → Configuration**:
+   - **Organization address**: the address of your organization as in the browser, for example
+     `https://example.zulipchat.com` or `http://192.168.1.20`.
+   - **Bot e-mail** and **API key**: those of step 2.
+   - **Allowed people**: the people the bot listens to, separated by commas, by **e-mail as shown in Zulip**
+     or by **user id** (`alice@example.org, 12`). **Empty, the bot answers nobody**: it ignores the messages
+     of everyone who is not in this list. Many organizations hide the e-mails from bots: then use the user
+     id, shown in the profile of the person (click their name, then **View profile**). The logs of the
+     integration also give the user id of a person who is not allowed yet when they write to the bot.
+   - **Watched channels**: the channels whose messages start scenes, by name (`garage`, `#Living room`),
+     separated by commas. The bot subscribes to the public channels by itself; subscribe it to the private
+     ones first. A name that does not exist is reported, never created.
+   - **Command prefix**: `!` by default (`/` opens the slash commands of Zulip).
+   - **Language of the bot**: the language of what the bot writes before a person is linked.
+4. Click **Test the connection**: the report gives the e-mail of the bot, the watched channels it found and
+   the allowed people it found. The connection status of the page says it too, and names a channel or a
+   person that was not found.
 
-## Actions
+### Link your Zulip account to talk to Gladys
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+Each Gladys user who wants to talk to Gladys from Zulip does it once:
 
-## Scenes
+1. In Gladys, **Integrations → Zulip → Configuration**, block "Link my account": click **Generate a link
+   code**.
+2. In Zulip, open a **direct message** with the bot (the **+** next to "Direct messages", then its name)
+   and send it the code (8 characters). The bot confirms: your Zulip account is linked to your Gladys user.
+   You can unlink it from the same block.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+## What the bot does
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+- **In a direct message** with one allowed person: it passes the messages to Gladys, with the authority of
+  the linked Gladys user, exactly like the Telegram bot: "What is the temperature in the living room?",
+  "Turn off the lights". The answers of Gladys come back in this direct message, Markdown rendered by
+  Zulip. The messages Gladys sends to you (the **Send Message** scene action, the system messages) arrive
+  there too, even before any conversation. A camera image sent by a scene arrives as an image.
+- **In a watched channel**: every message of an allowed person, in any topic, starts the **Zulip message
+  received** trigger, and a message starting with the prefix also starts **Zulip command received**. A
+  mention of the bot in front is dropped: `@**Gladys** !lights off` is the command `lights`. The bot never
+  answers there by itself: what happens is up to your scenes.
+- **Anywhere else** (a group direct message, a channel that is not watched): it stays silent. Gladys never
+  answers where others can read.
+- **What it ignores**: everyone who is not an allowed person, every bot (its own messages too: a scene that
+  posts in a watched channel never starts itself again), edits, and the messages older than 5 minutes when
+  it reads them (a "!open garage" from two hours ago does not run now).
+- **After a cut** (a restart of the server, of Gladys, a network blip): it reconnects by itself. Zulip keeps
+  the messages of a cut shorter than 10 minutes for the bot; after a longer one, or a restart, the bot
+  reads back the messages of the last 5 minutes.
 
 ## Dashboard
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+The **Zulip** widget shows whether the bot is connected, its e-mail, the number of watched channels, the
+last 5 messages received in the watched channels (author, topic, text, date) and a **Test the connection**
+button. The direct messages with Gladys are never shown: everyone who sees the dashboard sees the widget.
+
+## Scenes
+
+### Triggers
+
+- **Zulip message received**: an allowed person wrote in a watched channel. Filters (empty = any):
+  **Channel** (written as in the configuration, for example `garage`), **Topic** (`door`) and **Sender**
+  (written as in the allowed people: `alice@example.org` or `12`). Variables: Message, Sender, Sender
+  name, Channel, Topic, Channel id.
+- **Zulip command received**: an allowed person wrote a command in a watched channel: the prefix, then a
+  word, then optional arguments, for example `!lights off kitchen`. Filter **Command**: the word **without
+  the prefix, in lower case** (`lights`); and Channel, Topic, Sender. Variables: Command (`lights`),
+  Arguments (`off kitchen`), Message, Sender, Sender name, Channel, Topic, Channel id. The same message
+  also starts **Zulip message received**.
+- **Zulip connection lost**: the bot cannot reach the server any more, for a minute, or its key is refused.
+  Variable: Error. Started once, until the connection comes back.
+- **Zulip connection restored**: the bot reaches the server again after a lost connection. Variable: Bot
+  account (e-mail).
+
+### Actions
+
+- **Send a Zulip message**: posts a message in a channel (its name, `garage` or `#garage`) under a
+  **Topic** (`Gladys` when empty), or to a person in a direct message (their e-mail, or `@` and their user
+  id: `@12`). The message accepts the scene variables and the Markdown of Zulip (`**bold**`, `*italic*`,
+  lists, links, `@**all**`). The bot does not need to be subscribed to a public channel. Results: Sent
+  (yes/no), Message id, Error. A failed message does not stop the scene: test **Sent** with a condition if
+  needed.
+
+To write to one Gladys user, the **Send Message** action of Gladys also works: it reaches their linked
+Zulip account.
+
+### Scene ideas
+
+- **Garage by command**: trigger **Zulip command received**, command `garage`, channel `garage`; then a
+  condition on the variable Arguments equal to `close`, and the action that closes the garage.
+- **Washing machine done**: when the power of the washing machine plug drops, **Send a Zulip message** to
+  the channel `family`, topic `Laundry`: "The washing machine is done".
+- **Alert when the bot is cut off**: trigger **Zulip connection lost**, then a notification through another
+  channel (Gotify, ntfy, SMS) with the Error variable.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"no Zulip server at this address"**: use the address you open Zulip with in a browser, without
+  `/login` nor what follows `#`. `https://<address>/api/v1/server_settings` must answer
+  `{"result":"success"…}`.
+- **"bot e-mail or API key refused"**: the key was regenerated, the bot deactivated, or the e-mail is not
+  the one of the bot (`…-bot@…`). Copy them again from **Personal settings → Bots**.
+- **A watched channel is not found**: the status of the page and the test name it. Check its name; for a
+  private channel, subscribe the bot to it first, then save the configuration again.
+- **A person is not found**: the e-mails are probably hidden from bots in your organization: use the user
+  id. Bots and deactivated accounts are never allowed.
+- **The bot does not answer me**: are you in **Allowed people**? Do you write to it in a direct message,
+  just the two of you (not a group direct message)? Is your account linked (the bot then gives you the
+  instructions)?
+- **A command does not start the scene**: the Command filter is the word without the prefix, in lower
+  case: `lights`, not `!Lights`.
+- More details in the logs of the integration with `LOG_LEVEL=debug`.
+
+## Limits
+
+- A person linked to Gladys can do from Zulip everything their Gladys user can do: keep the list of allowed
+  people short, and keep the API key of the bot secret.
+- One bot per Gladys. The bot reads the messages through the event queue of Zulip (long polling): a command
+  takes effect in about a second. Messages missed during a cut longer than 5 minutes are skipped.
+- Files, images and voice messages sent to the bot arrive as their Markdown link; only text counts. The
+  answers of Gladys go to the direct message, never to a channel.
+- Zulip limits each account to 200 requests per minute by default: keep the messages of your scenes
+  reasonable.
+- Not affiliated with Kandra Labs, Inc. Zulip is a trademark of Kandra Labs, Inc.

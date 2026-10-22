@@ -1,0 +1,9 @@
+{
+  "result": "success",
+  "msg": "",
+  "subscribed": {},
+  "already_subscribed": {
+    "9": ["garage"]
+  },
+  "new_subscription_messages_sent": true
+}
