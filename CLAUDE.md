@@ -251,7 +251,8 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - **Temps réel** : file d'événements, `POST /register` (`event_types: ["message"]`, `apply_markdown: false`
   pour recevoir le Markdown tapé et non du HTML), puis `GET /events` en long polling (le serveur répond par
   un `heartbeat` au bout d'environ 50 s ; délai client 90 s). Après un échec, le sondage suivant passe
-  `dont_block=true` : le retour du serveur se voit tout de suite, sans attendre un événement. La file vit
+  `dont_block=true` avec un délai de 15 s : le retour du serveur se voit tout de suite, et un serveur
+  figé (vérifié avec `docker pause`) est déclaré perdu en 2 min 30 environ (90 s de long polling + 60 s). La file vit
   **10 minutes sans sondage** (`idle_queue_timeout_secs: 600`) : une coupure courte ne perd rien ; au-delà,
   `400 BAD_EVENT_QUEUE_ID` → nouvelle file sans délai, et rattrapage par `GET /messages?anchor=newest`
   (100 derniers, filtrés par identifiant > `lastMessageId` persisté). Au tout premier démarrage,

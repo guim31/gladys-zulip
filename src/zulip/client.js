@@ -290,7 +290,8 @@ export class ZulipClient {
         last_event_id: lastEventId,
         ...(dontBlock ? { dont_block: true } : {}),
       },
-      timeoutMs: EVENTS_TIMEOUT_MS,
+      // A dont_block poll answers at once: a server that hangs is found in 15 s, not 90.
+      timeoutMs: dontBlock ? REQUEST_TIMEOUT_MS : EVENTS_TIMEOUT_MS,
       signal,
     });
     return Array.isArray(data.events) ? data.events : [];
